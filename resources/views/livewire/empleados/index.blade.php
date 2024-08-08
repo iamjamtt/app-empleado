@@ -265,6 +265,10 @@ class extends Component {
 
         $beneficios = collect([
             ['BeneficioNombre' => 'Gratificación de Julio y Diciembre'],
+            ['BeneficioNombre' => 'CTS'],
+            ['BeneficioNombre' => 'Vacaciones'],
+            ['BeneficioNombre' => 'Seguro de Vida'],
+            ['BeneficioNombre' => 'Seguro de Salud']
         ]);
 
         $meses = collect([
