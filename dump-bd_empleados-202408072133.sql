@@ -71,7 +71,7 @@ CREATE TABLE `Empleado` (
   CONSTRAINT `empleado_ibfk_2` FOREIGN KEY (`AreaID`) REFERENCES `Area` (`AreaID`),
   CONSTRAINT `empleado_ibfk_3` FOREIGN KEY (`ModalidadID`) REFERENCES `ModalidadContrato` (`ModalidadID`),
   CONSTRAINT `empleado_ibfk_4` FOREIGN KEY (`JornadaID`) REFERENCES `JornadaLaboral` (`JornadaID`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -80,7 +80,7 @@ CREATE TABLE `Empleado` (
 
 LOCK TABLES `Empleado` WRITE;
 /*!40000 ALTER TABLE `Empleado` DISABLE KEYS */;
-INSERT INTO `Empleado` VALUES (2,'EMP002','72155069','Jamt Americo','Mendoza','Flores',1,3,1,1,'2022-06-20','2000-10-24','2022-06-22','mendoza_jamt@app.empleado.com'),(3,'EMP004','76441899','Jim','Maldonado','Maynas',1,2,1,2,'2011-01-01','1999-09-06','2011-01-01','maldonado_jim@app.empleado.com');
+INSERT INTO `Empleado` VALUES (2,'EMP002','72155069','Jamt Americo','Mendoza','Flores',1,3,1,1,'2022-06-20','2000-10-24','2022-06-22','mendoza_jamt@app.empleado.com'),(3,'EMP004','76441899','Jim','Maldonado','Maynas',1,2,1,2,'2011-01-01','1999-09-06','2011-01-01','maldonado_jim@app.empleado.com'),(4,'EMP005','72155068','Valentino Americo','Mendoza','Flores',1,4,1,2,'2020-01-01','2004-09-28','2020-01-01','mendoza_valentino@app.empleado.com');
 /*!40000 ALTER TABLE `Empleado` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -167,12 +167,14 @@ CREATE TABLE `Operacion` (
   `OperacionID` int NOT NULL AUTO_INCREMENT,
   `EmpID` int DEFAULT NULL,
   `OperacionBeneficios` varchar(255) DEFAULT NULL,
+  `OperacionMontoBeneficios` decimal(10,2) DEFAULT NULL,
+  `OperacionMesesBeneficios` varchar(255) DEFAULT NULL,
   `OperacionBonoProductividad` decimal(10,2) DEFAULT NULL,
   `OperacionMesAsignacionBono` int DEFAULT NULL,
   PRIMARY KEY (`OperacionID`),
   KEY `EmpID` (`EmpID`),
   CONSTRAINT `operacion_ibfk_1` FOREIGN KEY (`EmpID`) REFERENCES `Empleado` (`EmpID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -181,6 +183,7 @@ CREATE TABLE `Operacion` (
 
 LOCK TABLES `Operacion` WRITE;
 /*!40000 ALTER TABLE `Operacion` DISABLE KEYS */;
+INSERT INTO `Operacion` VALUES (1,2,'Gratificación de Julio y Diciembre',500.00,'\"[\\\"7\\\",\\\"12\\\"]\"',200.00,7),(2,4,'Gratificación de Julio y Diciembre',500.00,'\"[\\\"7\\\",\\\"12\\\"]\"',200.00,5),(3,3,'Vacaciones',300.00,'\"[\\\"7\\\",\\\"8\\\"]\"',NULL,NULL);
 /*!40000 ALTER TABLE `Operacion` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -197,4 +200,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-08-07  0:37:39
+-- Dump completed on 2024-08-07 21:33:38
