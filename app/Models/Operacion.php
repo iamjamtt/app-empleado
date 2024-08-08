@@ -17,8 +17,14 @@ class Operacion extends Model
         'OperacionID',
         'EmpID',
         'OperacionBeneficios',
+        'OperacionMontoBeneficios',
+        'OperacionMesesBeneficios',
         'OperacionBonoProductividad',
         'OperacionMesAsignacionBono'
+    ];
+
+    protected $casts = [
+        'OperacionMesesBeneficios' => 'array',
     ];
 
     public function empleado(): BelongsTo

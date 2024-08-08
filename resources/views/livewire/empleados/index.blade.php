@@ -1,10 +1,10 @@
 <?php
 
-use App\Models\Empleado;
+use App\Models\{Empleado, Operacion};
 use Illuminate\Support\Collection;
 use Livewire\Volt\Component;
 use Mary\Traits\Toast;
-use Livewire\Attributes\Title;
+use Livewire\Attributes\{Title, Validate};
 
 new
 #[Title('Gestion de Empleados')]
@@ -13,6 +13,15 @@ class extends Component {
 
     public string $search = '';
 
+    public $empleado;
+
+    // Modal
+    public bool $modal = false;
+    public string $titleModal = '';
+    public string $subtitleModal = '';
+    public string $buttonModal = '';
+    public string $accionModal = '';
+
     // Modal Alerta
     public bool $modalAlerta = false;
     public string $titleModalAlerta = '';
@@ -20,6 +29,14 @@ class extends Component {
     public string $textModalAlerta = '';
     public string $buttonModalAlerta = '';
     public string $actionModalAlerta = '';
+
+    // Formulario de Beneficios
+    #[Validate('required')]
+    public string $beneficio = '';
+    #[Validate('required|numeric')]
+    public $monto;
+    #[Validate('required|array')]
+    public array $mesesSeleccionados = [];
 
     public function calcularEdad($EmpCodigo)
     {
@@ -66,6 +83,60 @@ class extends Component {
         $this->modalAlerta = false;
     }
 
+    public function asignarBeneficios(Empleado $empleado)
+    {
+        $this->modal = true;
+        $this->empleado = $empleado;
+        $this->titleModal = 'Asignar Beneficios';
+        $this->subtitleModal = 'Empleado: ' . $empleado->EmpApellidoPaterno . ' ' . $empleado->EmpApellidoMaterno . ', ' . $empleado->EmpNombres;
+        $this->buttonModal = 'Guardar';
+        $this->accionModal = 'guardarBeneficios';
+
+        $operacion = Operacion::query()
+            ->where('EmpID', $empleado->EmpID)
+            ->first();
+
+        if ($operacion) {
+            $this->beneficio = $operacion->OperacionBeneficios;
+            $this->monto = $operacion->OperacionMontoBeneficios;
+            $this->mesesSeleccionados = json_decode($operacion->OperacionMesesBeneficios);
+        }
+    }
+
+    public function guardarBeneficios()
+    {
+        $this->validate([
+            'beneficio' => 'required',
+            'monto' => 'required|numeric',
+            'mesesSeleccionados' => 'required|array',
+        ]);
+
+        $operacion = Operacion::query()
+            ->where('EmpID', $this->empleado->EmpID)
+            ->first();
+
+        if (!$operacion) {
+            $operacion = new Operacion();
+            $operacion->EmpID = $this->empleado->EmpID;
+            $operacion->save();
+        }
+
+        $operacion->OperacionBeneficios = $this->beneficio;
+        $operacion->OperacionMontoBeneficios = $this->monto;
+        $operacion->OperacionMesesBeneficios = json_encode($this->mesesSeleccionados);
+        $operacion->save();
+
+        // Cerrar Modal y Mostrar Mensaje de Exito
+        $this->modal = false;
+        $this->success(
+            '¡Exito!',
+            'Se asignaron los beneficios correctamente.'
+        );
+
+        // Limpiar Variables
+        $this->reset();
+    }
+
     public function headers(): array
     {
         return [
@@ -86,9 +157,30 @@ class extends Component {
             ->whereAny(['EmpNombres'], 'LIKE', '%' . $this->search . '%')
             ->get();
 
+        $beneficios = collect([
+            ['BeneficioNombre' => 'Gratificación de Julio y Diciembre'],
+        ]);
+
+        $meses = collect([
+            ['MesNombre' => 'Enero'],
+            ['MesNombre' => 'Febrero'],
+            ['MesNombre' => 'Marzo'],
+            ['MesNombre' => 'Abril'],
+            ['MesNombre' => 'Mayo'],
+            ['MesNombre' => 'Junio'],
+            ['MesNombre' => 'Julio'],
+            ['MesNombre' => 'Agosto'],
+            ['MesNombre' => 'Setiembre'],
+            ['MesNombre' => 'Octubre'],
+            ['MesNombre' => 'Noviembre'],
+            ['MesNombre' => 'Diciembre'],
+        ]);
+
         return [
             'empleados' => $empleados,
-            'headers' => $this->headers()
+            'headers' => $this->headers(),
+            'beneficios' => $beneficios,
+            'meses' => $meses
         ];
     }
 }; ?>
@@ -157,17 +249,68 @@ class extends Component {
                     tooltip="Editar"
                     link="/edit/{{ $empleado->EmpID }}"
                 />
+                <x-dropdown class="btn-sm">
+                    <x-menu-item
+                        title="Asignar Beneficios"
+                        icon="o-shield-check"
+                        wire:click="asignarBeneficios({{ $empleado->EmpID }})"
+                    />
+                    {{-- <x-menu-item title="Remove" icon="o-trash" /> --}}
+                </x-dropdown>
                 {{-- <x-button icon="o-trash" spinner class="text-red-500 btn-sm" tooltip="Eliminar" wire:click="alertaDelete({{ $usuario->UsuId }})" /> --}}
             </div>
             @endscope
         </x-table>
     </x-card>
 
+    <!-- ALERTA -->
     <x-modal wire:model="modalAlerta" title="{{ $titleModalAlerta }}" subtitle="{{ $subtitleModalAlerta }}">
         {{ $textModalAlerta }}
         <x-slot:actions>
             <x-button label="Cancelar" @click="$wire.modalAlerta = false" />
             <x-button label="{{ $buttonModalAlerta }}" class="btn-success" wire:click="{{ $actionModalAlerta }}" />
+        </x-slot:actions>
+    </x-modal>
+
+    <!-- MODAL -->
+    <x-modal wire:model="modal" title="{{ $titleModal }}" subtitle="{{ $subtitleModal }}" separator>
+        @if ($accionModal == 'guardarBeneficios')
+            <x-form>
+                <x-select
+                    label="Beneficios"
+                    :options="$beneficios"
+                    option-value="BeneficioNombre"
+                    option-label="BeneficioNombre"
+                    placeholder="Seleccione los beneficios a asignar"
+                    wire:model.live="beneficio"
+                    inline
+                />
+                <x-input
+                    label="Monto"
+                    wire:model.live="monto"
+                    type="number"
+                    inline
+                />
+                <div class="grid grid-cols-3 gap-4">
+                    @foreach ($meses as $item)
+                        <x-checkbox
+                            label="{{ $item['MesNombre'] }}"
+                            wire:model.live="mesesSeleccionados"
+                            value="{{ $item['MesNombre'] }}"
+                            wire:key="mesesSeleccionados.{{ $loop->index }}"
+                        />
+                    @endforeach
+                </div>
+            </x-form>
+        @endif
+
+        <x-slot:actions>
+            <x-button label="Cancel" @click="$wire.modal = false" />
+            <x-button
+                label="{{ $buttonModal }}"
+                class="btn-primary"
+                wire:click="{{ $accionModal }}"
+            />
         </x-slot:actions>
     </x-modal>
 </div>
