@@ -38,6 +38,12 @@ class extends Component {
     #[Validate('required|array')]
     public array $mesesSeleccionados = [];
 
+    // Formulario de Bono
+    #[Validate('required|numeric')]
+    public $montoBono;
+    #[Validate('required|numeric')]
+    public $mesesBono;
+
     public function calcularEdad($EmpCodigo)
     {
         $empleado = Empleado::query()
@@ -85,6 +91,8 @@ class extends Component {
 
     public function asignarBeneficios(Empleado $empleado)
     {
+        $this->reset();
+
         $this->modal = true;
         $this->empleado = $empleado;
         $this->titleModal = 'Asignar Beneficios';
@@ -137,6 +145,65 @@ class extends Component {
         $this->reset();
     }
 
+    public function asignarBono(Empleado $empleado)
+    {
+        $this->reset();
+
+        $this->modal = true;
+        $this->empleado = $empleado;
+        $this->titleModal = 'Asignar Bono';
+        $this->subtitleModal = 'Empleado: ' . $empleado->EmpApellidoPaterno . ' ' . $empleado->EmpApellidoMaterno . ', ' . $empleado->EmpNombres;
+        $this->buttonModal = 'Guardar';
+        $this->accionModal = 'guardarBono';
+
+        $operacion = Operacion::query()
+            ->where('EmpID', $empleado->EmpID)
+            ->first();
+
+        if ($operacion) {
+            $this->montoBono = $operacion->OperacionBonoProductividad;
+            $this->mesesBono = $operacion->OperacionMesAsignacionBono;
+        }
+    }
+
+    public function guardarBono()
+    {
+        $this->validate([
+            'montoBono' => 'required|numeric',
+            'mesesBono' => 'required|numeric',
+        ]);
+
+        $operacion = Operacion::query()
+            ->where('EmpID', $this->empleado->EmpID)
+            ->first();
+
+        if (!$operacion) {
+            $operacion = new Operacion();
+            $operacion->EmpID = $this->empleado->EmpID;
+            $operacion->save();
+        }
+
+        $operacion->OperacionBonoProductividad = $this->montoBono;
+        $operacion->OperacionMesAsignacionBono = $this->mesesBono;
+        $operacion->save();
+
+        // Cerrar Modal y Mostrar Mensaje de Exito
+        $this->modal = false;
+        $this->success(
+            '¡Exito!',
+            'Se asignó el bono correctamente.'
+        );
+
+        // Limpiar Variables
+        $this->reset();
+    }
+
+    public function cerrarModal()
+    {
+        $this->modal = false;
+        $this->reset();
+    }
+
     public function headers(): array
     {
         return [
@@ -162,18 +229,18 @@ class extends Component {
         ]);
 
         $meses = collect([
-            ['MesNombre' => 'Enero'],
-            ['MesNombre' => 'Febrero'],
-            ['MesNombre' => 'Marzo'],
-            ['MesNombre' => 'Abril'],
-            ['MesNombre' => 'Mayo'],
-            ['MesNombre' => 'Junio'],
-            ['MesNombre' => 'Julio'],
-            ['MesNombre' => 'Agosto'],
-            ['MesNombre' => 'Setiembre'],
-            ['MesNombre' => 'Octubre'],
-            ['MesNombre' => 'Noviembre'],
-            ['MesNombre' => 'Diciembre'],
+            ['MesID' => 1, 'MesNombre' => 'Enero'],
+            ['MesID' => 2, 'MesNombre' => 'Febrero'],
+            ['MesID' => 3, 'MesNombre' => 'Marzo'],
+            ['MesID' => 4, 'MesNombre' => 'Abril'],
+            ['MesID' => 5, 'MesNombre' => 'Mayo'],
+            ['MesID' => 6, 'MesNombre' => 'Junio'],
+            ['MesID' => 7, 'MesNombre' => 'Julio'],
+            ['MesID' => 8, 'MesNombre' => 'Agosto'],
+            ['MesID' => 9, 'MesNombre' => 'Setiembre'],
+            ['MesID' => 10, 'MesNombre' => 'Octubre'],
+            ['MesID' => 11, 'MesNombre' => 'Noviembre'],
+            ['MesID' => 12, 'MesNombre' => 'Diciembre'],
         ]);
 
         return [
@@ -255,7 +322,11 @@ class extends Component {
                         icon="o-shield-check"
                         wire:click="asignarBeneficios({{ $empleado->EmpID }})"
                     />
-                    {{-- <x-menu-item title="Remove" icon="o-trash" /> --}}
+                    <x-menu-item
+                        title="Asignar Bono"
+                        icon="o-banknotes"
+                        wire:click="asignarBono({{ $empleado->EmpID }})"
+                    />
                 </x-dropdown>
                 {{-- <x-button icon="o-trash" spinner class="text-red-500 btn-sm" tooltip="Eliminar" wire:click="alertaDelete({{ $usuario->UsuId }})" /> --}}
             </div>
@@ -291,21 +362,62 @@ class extends Component {
                     type="number"
                     inline
                 />
+                <div class="text-sm text-gray-500">
+                    Mes de Asignación:
+                </div>
                 <div class="grid grid-cols-3 gap-4">
                     @foreach ($meses as $item)
                         <x-checkbox
                             label="{{ $item['MesNombre'] }}"
                             wire:model.live="mesesSeleccionados"
-                            value="{{ $item['MesNombre'] }}"
-                            wire:key="mesesSeleccionados.{{ $loop->index }}"
+                            value="{{ $item['MesID'] }}"
+                            wire:key="mesesSeleccionados.{{ $item['MesID'] }}"
                         />
                     @endforeach
                 </div>
             </x-form>
         @endif
 
+        @if ($accionModal == 'guardarBono')
+            <x-form>
+                <x-input
+                    label="Monto"
+                    wire:model.live="montoBono"
+                    type="number"
+                    inline
+                />
+                <div class="text-sm text-gray-500">
+                    Mes de Asignación:
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    @foreach ($meses as $item)
+                        <label for="mesesBono.{{ $item['MesID'] }}" class="flex items-center">
+                            <input
+                                type="radio"
+                                wire:model.live="mesesBono"
+                                value="{{ $item['MesID'] }}"
+                                id="mesesBono.{{ $item['MesID'] }}"
+                                class="radio radio-primary @error('mesesBono') radio-error @enderror"
+                            />
+                            <span
+                                class="ml-2 @error('mesesBono') text-red-500 @enderror"
+                            >
+                                {{ $item['MesNombre'] }}
+                            </span>
+                        </label>
+                    @endforeach
+                    @error('mesesBono')
+                        <div class="col-span-3 text-red-500 text-sm">{{ $message }}</div>
+                    @enderror
+                </div>
+            </x-form>
+        @endif
+
         <x-slot:actions>
-            <x-button label="Cancel" @click="$wire.modal = false" />
+            <x-button
+                label="Cancel"
+                wire:click="cerrarModal"
+            />
             <x-button
                 label="{{ $buttonModal }}"
                 class="btn-primary"
