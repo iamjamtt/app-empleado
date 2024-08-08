@@ -44,6 +44,10 @@ class extends Component {
     #[Validate('required|numeric')]
     public $mesesBono;
 
+    // Formulario de Boleta
+    #[Validate('required|numeric')]
+    public $mesesBoleta;
+
     public function calcularEdad($EmpCodigo)
     {
         $empleado = Empleado::query()
@@ -204,6 +208,41 @@ class extends Component {
         $this->reset();
     }
 
+    public function verBoleta(Empleado $empleado)
+    {
+        $this->reset();
+
+        $this->modal = true;
+        $this->empleado = $empleado;
+        $this->titleModal = 'Boleta de Pagos';
+        $this->subtitleModal = 'Empleado: ' . $empleado->EmpApellidoPaterno . ' ' . $empleado->EmpApellidoMaterno . ', ' . $empleado->EmpNombres;
+        $this->buttonModal = 'Abrir Boleta';
+        $this->accionModal = 'abrirBoleta';
+    }
+
+    public function abrirBoleta()
+    {
+        $this->validate([
+            'mesesBoleta' => 'required|numeric',
+        ]);
+
+        // Validamos si el mes seleccionado es mayor al mes actual
+        if ($this->mesesBoleta > date('m')) {
+            $this->error(
+                '¡Error!',
+                'No se puede generar la boleta para un mes futuro.'
+            );
+            return;
+        }
+
+        $this->modal = false;
+
+        $this->dispatch('report:boleta',
+            EmpID: $this->empleado->EmpID,
+            MesID: $this->mesesBoleta
+        );
+    }
+
     public function headers(): array
     {
         return [
@@ -327,6 +366,11 @@ class extends Component {
                         icon="o-banknotes"
                         wire:click="asignarBono({{ $empleado->EmpID }})"
                     />
+                    <x-menu-item
+                        title="Ver Boleta de Pagos"
+                        icon="o-credit-card"
+                        wire:click="verBoleta({{ $empleado->EmpID }})"
+                    />
                 </x-dropdown>
                 {{-- <x-button icon="o-trash" spinner class="text-red-500 btn-sm" tooltip="Eliminar" wire:click="alertaDelete({{ $usuario->UsuId }})" /> --}}
             </div>
@@ -413,6 +457,20 @@ class extends Component {
             </x-form>
         @endif
 
+        @if ($accionModal == 'abrirBoleta')
+            <x-form>
+                <x-select
+                    label="Mes de Boleta"
+                    :options="$meses"
+                    option-value="MesID"
+                    option-label="MesNombre"
+                    placeholder="Seleccione el mes de la boleta"
+                    wire:model.live="mesesBoleta"
+                    inline
+                />
+            </x-form>
+        @endif
+
         <x-slot:actions>
             <x-button
                 label="Cancel"
@@ -426,3 +484,14 @@ class extends Component {
         </x-slot:actions>
     </x-modal>
 </div>
+
+@script
+<script>
+    $wire.on('report:boleta', (event) => {
+        const a = document.createElement('a');
+        a.href = '/report/boleta/' + event.EmpID + '/' + event.MesID;
+        a.target = '_blank';
+        a.click();
+    });
+</script>
+@endscript
